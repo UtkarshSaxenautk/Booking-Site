@@ -22,5 +22,7 @@ func routes(app *config.AppConfig) http.Handler {
 	mux.Use(Sessionload)
 	mux.Get("/", handlers.Repo.Home)
 	mux.Get("/about", handlers.Repo.About)
+	fileServer := http.FileServer(http.Dir("./Static/"))
+	mux.Handle("/Static/*", http.StripPrefix("/Static", fileServer))
 	return mux
 }
