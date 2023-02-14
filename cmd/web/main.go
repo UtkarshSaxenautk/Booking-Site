@@ -1,23 +1,27 @@
 package main
 
 import (
+	"fmt"
+	"github.com/alexedwards/scs/v2"
+	"github.com/tsawler/bookings-app/pkg/config"
+	"github.com/tsawler/bookings-app/pkg/handlers"
+	"github.com/tsawler/bookings-app/pkg/render"
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/alexedwards/scs/v2"
-	"github.com/utkarsh/bookings/pkg/config"
-	"github.com/utkarsh/bookings/pkg/handlers"
-	"github.com/utkarsh/bookings/pkg/render"
 )
 
-const portNumber = ":3030"
+const portNumber = ":8080"
 
 var app config.AppConfig
 var session *scs.SessionManager
 
+// main is the main function
 func main() {
+	// change this to true when in production
+	app.InProduction = false
 
+	// set up the session
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
@@ -25,31 +29,29 @@ func main() {
 	session.Cookie.Secure = app.InProduction
 
 	app.Session = session
+
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
-		log.Fatal("cannot create template cache : ", err)
+		log.Fatal("cannot create template cache")
 	}
+
 	app.TemplateCache = tc
 	app.UseCache = false
+
 	repo := handlers.NewRepo(&app)
 	handlers.NewHandlers(repo)
-	render.NewTemplate(&app)
-	/*http.HandleFunc("/", handlers.Repo.Home)
-	http.HandleFunc("/about", handlers.Repo.About)*/
-	log.Println("Server running on : ", 3030)
-	//err = http.ListenAndServe(CONN_HOST+":"+CONN_PORT, nil)
-	//if err != nil {
-	//log.Fatal("Error in starting server :", err)
-	//return
-	//}
+
+	render.NewTemplates(&app)
+
+	fmt.Println(fmt.Sprintf("Staring application on port %s", portNumber))
+
 	srv := &http.Server{
 		Addr:    portNumber,
 		Handler: routes(&app),
 	}
-	erro := srv.ListenAndServe()
-	if erro != nil {
-		log.Fatal("Error in starting server : ", erro)
-		return
-	}
 
+	err = srv.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
